@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "demo_app" "\0"
+            VALUE "CompanyName", "com.barkinb" "\0"
+            VALUE "FileDescription", "prism" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "demo_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "demo_app.exe" "\0"
-            VALUE "ProductName", "demo_app" "\0"
+            VALUE "InternalName", "prism" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2024 com.barkinb. All rights reserved." "\0"
+            VALUE "OriginalFilename", "prism.exe" "\0"
+            VALUE "ProductName", "prism" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

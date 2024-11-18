@@ -1,4 +1,4 @@
-# demo_app
+# prism
 
 A new Flutter project.
 
