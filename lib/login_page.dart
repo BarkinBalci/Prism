@@ -48,37 +48,40 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         title: const Text('Login'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            if (_errorMessage.isNotEmpty)
-              Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.red),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
               ),
-            ElevatedButton(
-              onPressed: () async {
-                await _signIn(_emailController.text, _passwordController.text);
-              },
-              child: const Text('Sign In'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await _signUp(_emailController.text, _passwordController.text);
-              },
-              child: const Text('Sign Up'),
-            ),
-          ],
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: true,
+              ),
+              if (_errorMessage.isNotEmpty)
+                Text(
+                  _errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ElevatedButton(
+                onPressed: () async {
+                  await _signIn(_emailController.text, _passwordController.text);
+                },
+                child: const Text('Sign In'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await _signUp(_emailController.text, _passwordController.text);
+                },
+                child: const Text('Sign Up'),
+              ),
+            ],
+          ),
         ),
       ),
     );
