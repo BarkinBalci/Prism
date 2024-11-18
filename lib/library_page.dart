@@ -17,6 +17,8 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   double _uploadProgress = 0.0;
   List<String> _videoUrls = [];
+  bool _isSelectionMode = false;
+  List<String> _selectedVideos = [];
 
   @override
   void initState() {
@@ -75,18 +77,97 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
+  Future<void> _deleteSelectedVideos() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No user is signed in');
+      }
+      for (String url in _selectedVideos) {
+        String fileName = url.split('%2F').last.split('?').first;
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('videos/${user.uid}/$fileName');
+
+        await storageRef.delete();
+      }
+      setState(() {
+        _isSelectionMode = false;
+        _selectedVideos = [];
+      });
+      _fetchVideoUrls();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting video: $e')),
+      );
+    }
+  }
+
+  void _onVideoLongPress(String url) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedVideos.add(url);
+    });
+  }
+
+  void _onVideoTap(String url) {
+    if (_isSelectionMode) {
+      setState(() {
+        if (_selectedVideos.contains(url)) {
+          _selectedVideos.remove(url);
+          if (_selectedVideos.isEmpty) {
+            _isSelectionMode = false;
+          }
+        } else {
+          _selectedVideos.add(url);
+        }
+      });
+    } else {
+      // TODO: play video
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        elevation: 6,
         title: const Text('Prism'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-            },
-          ),
+          if (_isSelectionMode)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirm Delete'),
+                    content: const Text(
+                        'Are you sure you want to delete the selected videos? This action is permanent and cannot be undone!'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await _deleteSelectedVideos();
+                }
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+              },
+            ),
         ],
         bottom: _uploadProgress > 0 && _uploadProgress < 1
             ? PreferredSize(
@@ -96,7 +177,7 @@ class _LibraryPageState extends State<LibraryPage> {
             : null,
       ),
       body: _videoUrls.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: Text("Your gallery is empty."))
           : GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
@@ -106,11 +187,25 @@ class _LibraryPageState extends State<LibraryPage> {
               ),
               itemCount: _videoUrls.length,
               itemBuilder: (context, index) {
+                final url = _videoUrls[index];
+                final isSelected = _selectedVideos.contains(url);
                 return GestureDetector(
-                  onTap: () {
-                    //TODO play video
-                  },
-                  child: VideoPlayerWidget(url: _videoUrls[index]),
+                  onLongPress: () => _onVideoLongPress(url),
+                  onTap: () => _onVideoTap(url),
+                  child: Stack(
+                    children: [
+                      VideoPlayerWidget(url: url),
+                      if (isSelected)
+                        const Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Icon(
+                            Icons.check_circle,
+                            color: Colors.blue,
+                          ),
+                        ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -124,7 +219,7 @@ class _LibraryPageState extends State<LibraryPage> {
             await uploadVideoToFirebase(videoFile);
           }
         },
-        child: const Icon(Icons.camera),
+        child: const Icon(Icons.add),
       ),
     );
   }
