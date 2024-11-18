@@ -17,8 +17,13 @@ class _LibraryPageState extends State<LibraryPage> {
 
   Future<void> uploadVideoToFirebase(XFile videoFile) async {
     try {
-      final storageRef =
-          FirebaseStorage.instance.ref().child('videos/${videoFile.name}');
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No user is signed in');
+      }
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('videos/${user.uid}/${videoFile.name}');
       final uploadTask = storageRef.putFile(File(videoFile.path));
 
       uploadTask.snapshotEvents.listen((event) {
