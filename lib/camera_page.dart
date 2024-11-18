@@ -100,8 +100,8 @@ class _CameraPageState extends State<CameraPage> {
     final pickedFile = await picker.pickVideo(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      File videoFile = File(pickedFile.path);
-      Navigator.pop(context, videoFile);
+      _videoFile = pickedFile;
+      Navigator.pop(context, _videoFile);
     }
   }
 
@@ -112,59 +112,66 @@ class _CameraPageState extends State<CameraPage> {
       body: Stack(
         children: [
           if (controller.value.isInitialized)
-            Center(
-              child: CameraPreview(controller),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                CameraPreview(controller),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: pickVideoFromGallery,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(Icons.photo, color: Colors.white),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _isRecording ? stopRecording : startRecording,
+                      child: Container(
+                        width: 76,
+                        height: 76,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 70,
+                            height: 70,
+                            decoration: BoxDecoration(
+                              color: _isRecording ? Colors.red : Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.black, width: 6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: switchCamera,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(Icons.loop, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  GestureDetector(
-                    onTap: pickVideoFromGallery,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(Icons.photo, color: Colors.white),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _isRecording ? stopRecording : startRecording,
-                    child: Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: _isRecording ? Colors.red : Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 2),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: switchCamera,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(Icons.loop, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
