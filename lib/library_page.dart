@@ -3,6 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:prism/camera_page.dart';
+import 'package:prism/video_player.dart';
+import 'package:video_player/video_player.dart';
 import 'dart:io';
 
 class LibraryPage extends StatefulWidget {
@@ -14,6 +16,34 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   double _uploadProgress = 0.0;
+  List<String> _videoUrls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchVideoUrls();
+  }
+
+  Future<void> _fetchVideoUrls() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No user is signed in');
+      }
+      final storageRef =
+          FirebaseStorage.instance.ref().child('videos/${user.uid}');
+      final ListResult result = await storageRef.listAll();
+      final List<String> urls = await Future.wait(
+          result.items.map((ref) => ref.getDownloadURL()).toList());
+      setState(() {
+        _videoUrls = urls;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching videos: $e')),
+      );
+    }
+  }
 
   Future<void> uploadVideoToFirebase(XFile videoFile) async {
     try {
@@ -37,6 +67,7 @@ class _LibraryPageState extends State<LibraryPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Video uploaded successfully')),
       );
+      _fetchVideoUrls();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error uploading video: $e')),
@@ -64,6 +95,25 @@ class _LibraryPageState extends State<LibraryPage> {
               )
             : null,
       ),
+      body: _videoUrls.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                childAspectRatio: 1 / 1,
+                mainAxisSpacing: 8.0,
+                crossAxisSpacing: 8.0,
+              ),
+              itemCount: _videoUrls.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () {
+                    //TODO play video
+                  },
+                  child: VideoPlayerWidget(url: _videoUrls[index]),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final videoFile = await Navigator.push<XFile>(
