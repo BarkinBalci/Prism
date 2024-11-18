@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:prism/camera_page.dart';
-import 'package:prism/video_player.dart';
+import 'package:prism/thumbnail.dart';
+import 'package:prism/video_player_page.dart';
 import 'package:video_player/video_player.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 
 class LibraryPage extends StatefulWidget {
@@ -55,7 +58,7 @@ class _LibraryPageState extends State<LibraryPage> {
       }
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child('videos/${user.uid}/${videoFile.name}');
+          .child('videos/${user.uid}/${videoFile.name}.mp4');
       final uploadTask = storageRef.putFile(File(videoFile.path));
 
       uploadTask.snapshotEvents.listen((event) {
@@ -103,28 +106,38 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
+  Future<void> _shareSelectedVideos() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No user is signed in');
+      }
+
+      final List<Future<String>> videoLinks = _selectedVideos.map((url) {
+        final fileName = url.split('%2F').last.split('?').first;
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('videos/${user.uid}/$fileName');
+        return storageRef.getDownloadURL();
+      }).toList();
+
+      final List<String> resolvedLinks = await Future.wait(videoLinks);
+
+      final String shareText = resolvedLinks.join('\n');
+
+      await Share.share(shareText, subject: 'Check out these videos!');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sharing videos: $e')),
+      );
+    }
+  }
+
   void _onVideoLongPress(String url) {
     setState(() {
       _isSelectionMode = true;
       _selectedVideos.add(url);
     });
-  }
-
-  void _onVideoTap(String url) {
-    if (_isSelectionMode) {
-      setState(() {
-        if (_selectedVideos.contains(url)) {
-          _selectedVideos.remove(url);
-          if (_selectedVideos.isEmpty) {
-            _isSelectionMode = false;
-          }
-        } else {
-          _selectedVideos.add(url);
-        }
-      });
-    } else {
-      // TODO: play video
-    }
   }
 
   @override
@@ -134,7 +147,11 @@ class _LibraryPageState extends State<LibraryPage> {
         elevation: 6,
         title: const Text('Prism'),
         actions: [
-          if (_isSelectionMode)
+          if (_isSelectionMode) ...[
+            IconButton(
+              onPressed: () async => await _shareSelectedVideos(),
+              icon: const Icon(Icons.share),
+            ),
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () async {
@@ -160,14 +177,15 @@ class _LibraryPageState extends State<LibraryPage> {
                   await _deleteSelectedVideos();
                 }
               },
-            )
-          else
+            ),
+          ] else ...[
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
               },
             ),
+          ],
         ],
         bottom: _uploadProgress > 0 && _uploadProgress < 1
             ? PreferredSize(
@@ -191,10 +209,17 @@ class _LibraryPageState extends State<LibraryPage> {
                 final isSelected = _selectedVideos.contains(url);
                 return GestureDetector(
                   onLongPress: () => _onVideoLongPress(url),
-                  onTap: () => _onVideoTap(url),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoPlayerPage(url: url),
+                      ),
+                    );
+                  },
                   child: Stack(
                     children: [
-                      VideoPlayerWidget(url: url),
+                      ThumbnailWidget(url: url),
                       if (isSelected)
                         const Positioned(
                           top: 0,
